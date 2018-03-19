@@ -7,15 +7,15 @@ from io import BytesIO
 app = flask.Flask(__name__)
 from timeit import default_timer as timer
 from profiler import profile
+from CONFIG import *
 
 
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-FOLDER = "images"
 
 @app.route('/api/albums')
 def get_albums():
-	structure.album_structure()
+	#structure.album_structure()
 	struct = structure.get_albums(1)
 	albums = []
 	for album in struct:
@@ -25,10 +25,11 @@ def get_albums():
 
 	return flask.jsonify(albums)
 
-@app.route('/api/album_data/<int:albumid>')
-def album_data(albumid):
+@app.route('/api/album_data/<int:albumid>/<mode>')
+#4y@profile(sort_args=['cumulative'], )
+def album_data(albumid, mode):
 	album = Album(albumid)
-	return flask.jsonify(album.metadata())
+	return flask.jsonify(album.metadata(mode))
 
 
 def serve_image(image, name):
@@ -46,19 +47,23 @@ def fetch_image(album, image, mode):
 	img = p.resize(mode)
 	global tim
 	tim += timer() - t
-	print(tim)
+	#print(tim)
 	return serve_image(img, p.file)
 
-
+tim = 0
 @app.route('/api/metadata/<album>/<image>/<mode>')
+#@profile(sort_args=['cumulative'], )
 def metadata(album, image, mode):
+	t = timer()
 	p = Photo(int(album), image)
 	if mode == 's':
 		out = {'date': p.date.isoformat()}
 	if mode == 'n':
 		out = p.exif_data()
 		out['star'] = p.star
-
+	global tim
+	tim += timer() - t
+	#print(tim)
 	return flask.jsonify(out)
 
 @app.route('/api/update/<album>/<image>', methods=['POST'])
@@ -70,4 +75,5 @@ def update(album, image):
 
 
 if __name__ == "__main__":
+	#structure.update()
 	app.run(debug=True, threaded=True)

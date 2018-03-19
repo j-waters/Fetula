@@ -1,0 +1,2 @@
+FOLDER = 'images'
+FACES = 'faces'

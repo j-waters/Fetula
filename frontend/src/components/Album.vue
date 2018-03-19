@@ -1,9 +1,9 @@
 <template>
         <v-flex xs12>
-        <v-card hover>
-          <v-card-title @click="activate"><h3 style="font-weight: 400;">{{name}}</h3> <v-chip disabled>{{size}} {{(size == 1) ? "photo" : "photos"}}</v-chip><span class="grey--text">{{albumRange}}</span><br></v-card-title>
+        <v-card hover v-on:click.native="activate">
+          <v-card-title><h3 style="font-weight: 400;">{{name}}</h3> <v-chip disabled>{{size}} {{(size == 1) ? "photo" : "photos"}}</v-chip><span class="grey--text">{{albumRange}}</span><br></v-card-title>
 					<v-card-text>
-            <album-thumbnail v-for="album in subAlbums" :albumid="album" :key="album"/>
+            <album-thumbnail v-for="album in subAlbums" :albumid="album" :key="album" :size="128"/>
             <thumbnail v-for="photo in photos" :key="photo" :photoid="photo" :album="albumid" :size="128"/>
           </v-card-text>
         </v-card>
@@ -38,7 +38,7 @@ export default {
 			if (this.fetching != true) {
 				this.fetching = true
 				axios
-					.get('http://127.0.0.1:5000/api/album_data/' + this.albumid)
+					.get('http://127.0.0.1:5000/api/album_data/' + this.albumid + '/m')
 					.then(response => {
 						this.fetching = false
 						this.photos = response.data.highlights

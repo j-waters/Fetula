@@ -1,44 +1,68 @@
 <template>
-  <v-card hover class="photo" height="128px">
-    <!--img :src="source" @click="activate"-->
-    <div class="progressive" @click="activate" v-on:mouseover="hover = true" v-on:mouseleave="hover = false">
-      <img class="preview" v-progressive="source + '/s'" :src="source + '/xs'"/>
-    <div class="caption">
-                            <div><p>{{name}}</p>
-                            </div>
-                        </div>
-		<v-icon style="position: absolute; z-index: 999; color: white; right: 0;">photo_album</v-icon>
-    </div>
-  </v-card>
+	<div :class="['thumb-pad', 'aspect-' + ratio]">
+		<v-card hover class="photo" :height="size + 'px'" v-on:mouseover="hover = true" v-on:mouseleave="hover = false" v-on:click.native.stop="activate">
+			<progressive-img
+				:src="source + modifier"
+				@onLoad="get_ratio"
+				/>
+				<transition name="hover">
+					
+			<div class="caption" v-show="true">
+									<div><p>{{name}}</p>
+									</div>
+									</div>
+								
+			</transition>
+			<v-icon style="position: absolute; z-index: 999; color: white; right: 0; top:0;">photo_album</v-icon>
+		</v-card> 
+  </div>
 </template>
 
 <script>
+//:placeholder="source + '/xs'"	
 import axios from 'axios'
 
 export default {
 	name: 'album-thumbnail',
-	props: ['albumid'],
+	props: ['albumid', 'size'],
 	data() {
 		return {
 			hover: false,
 			fetching: false,
 			name: '',
-			albums: []
+			albums: [],
+			ratio: '4x3'
 		}
 	},
 	methods: {
 		activate () {
-			console.log('click')
-			//this.$router.push({ name: 'album', query: { album: this.albumid } })
+			this.$router.push({ name: 'album', query: { album: this.albumid } })
 		},
 		mouseOver () {
 			this.hover = !this.hover
+		},
+		get_ratio() {
+			var c = this.$children[0].$children[0].$el.children
+			let img = c[c.length - 1].children[0]
+			img.onload = function(i){
+				img = i.target
+				var w = img.naturalWidth
+				var h = img.naturalHeight
+				var r = w / h
+				if (Math.round(r * 3, 2) == 4) {
+					this.ratio = '4x3'
+				}
+				if (Math.round(r * 4, 2) == 3) {
+					this.ratio = '3x4'
+				}
+			}.bind(this)
+			
 		},
 		fetchMeta() {
 			if (this.fetching != true) {
 				this.fetching = true
 				axios
-					.get('http://127.0.0.1:5000/api/album_data/' + this.albumid)
+					.get('http://127.0.0.1:5000/api/album_data/' + this.albumid + '/s')
 					.then(response => {
 						this.fetching = false
 						this.name = response.data.name
@@ -53,6 +77,15 @@ export default {
 	computed: {
 		source() {
 			return 'http://127.0.0.1:5000/api/image/' + this.albumid + '/A'
+		},
+		
+		modifier() {
+			if (parseInt(this.size) > 150){
+				return '/m'
+			}
+			else {
+				return '/s'
+			}
 		}
 	},
 
@@ -77,7 +110,7 @@ export default {
 
 
 .photo {
-  margin-right: 5px;
+  margin-bottom: 5px;
   display: inline-block;
 }
 

@@ -1,14 +1,15 @@
+import inspect
 import os
 from datetime import datetime
 from functools import reduce
 from json import load, dump
 from timeit import default_timer as timer
 from profiler import profile
-import inspect
+from structure import data_file
 
 import sys
 
-FOLDER = "images"
+from CONFIG import *
 
 class Album:
 	def __init__(self, key=None, path=None):
@@ -31,16 +32,16 @@ class Album:
 
 
 	def get_path(self):
-		with open(FOLDER + '/.fetula', 'r') as file:
-			albums = load(file)
+		with data_file(FOLDER) as dat:
+			albums = dat['albums']
 		for k, v in albums.items():
 			if k == str(self.key):
 				self.path = v
 		return self.path
 
 	def get_key(self):
-		with open(FOLDER + '/.fetula', 'r') as file:
-			albums = load(file)
+		with data_file(FOLDER) as dat:
+			albums = dat['albums']
 
 		for k, v in albums.items():
 			if v == self.path:
@@ -67,61 +68,52 @@ class Album:
 			break
 		files = [file for file in files if file.split('.')[-1] in ['jpg', 'png', 'JPG'] and file != '.fetula']
 		try:
-			oldData = self.data
+			oldData = self.data['photos']
 		except:
 			oldData = {}
-		if len(files) != len(oldData.keys()) or (datetime.now() - self.last_updated()).seconds > 3600:
+		if len(files) != len(oldData.keys()) or (datetime.now() - self.last_updated()).seconds > 3600 or True:
 			newData = []
 			for file in files:
 				#print(files.index(file), len(files))
 				newData.append(Photo(self, file=file).data())
 			data = {}
 			for p in range(len(newData)):
-				data[p] = newData[p]
+				data[str(p)] = newData[p]
 				for k, v in oldData.items():
 					if v['file'] == newData[p]['file'] or v.get('modified', 0) == newData[p]['modified']:
 						oldData[k].pop('file')
 						oldData[k].pop('modified', None)
-						data[p].update(oldData[k].copy())
+						data[str(p)].update(oldData[k].copy())
 						oldData.pop(k)
 						break
 
-			with open(self.path + '/.fetula', 'w') as file:
-				dump(data, file)
+			with data_file(self.path) as dat:
+				dat['photos'] = data
+			self.data['photos'] = data
 
 			for p in self.photos():
 				p.rename()
 
 	def get_data(self):
-		with open(self.path + '/.fetula', 'r') as file:
-			data = load(file) # type: dict
+		with data_file(self.path) as dat:
+			data = dat
 		self.data = data
 
-	class data_file:
-		def __init__(self, path):
-			self.path = path
-		def __enter__(self):
-			with open(self.path + '/.fetula', 'r') as file:
-				self.data =  load(file)
-				return self.data
 
-		def __exit__(self, a, b, c):
-			with open(self.path + '/.fetula', 'w') as file:
-				dump(self.data, file)
-
-
-	def metadata(self):
-		return {'name': self.name, 'highlights': list(self.highlights()), 'photos': list(self.data.keys()), 'albums': self.albums(), 'size': self.size(), 'range': self.range()}
+	def metadata(self, mode):
+		if mode == 'l':
+			return {'name': self.name, 'photos': list(self.data['photos'].keys()), 'albums': self.albums(), 'size': self.size(), 'range': self.range()}
+		if mode == 'm':
+			return {'name': self.name, 'highlights': list(self.highlights()), 'albums': self.albums(), 'size': self.size(), 'range': self.range()}
+		if mode == 's':
+			return {'name': self.name, 'size': self.size(), 'range': self.range()}
 
 	def size(self):
-		return len(self.data)
+		return len(self.data['photos'])
 
 	def photos(self):
-		"""curframe = inspect.currentframe()
-		calframe = inspect.getouterframes(curframe, 2)
-		print("photos", 'caller name:', calframe[1][3])  #"""
 		from photo import Photo
-		for k in self.data.keys():
+		for k in self.data['photos'].keys():
 			yield Photo(self, k)
 
 	def highlights(self):

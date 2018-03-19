@@ -1,5 +1,5 @@
 <template>
-    <v-layout row wrap>
+    <v-layout>
       <v-flex :class="{'flex xs9': !isFull, 'flex xs12': isFull, 'picture': true}" style="background-color: #000000;">
           <div class="imgpanel" style="position: relative; height: 100vh;">
             
@@ -19,13 +19,18 @@
             	<img v-if="parseInt(this.$route.query.photo) - 1 >= 0" src="@/assets/arrow.svg" class="nav-previous" v-on:click="selectPrev()">
             
             <div class="menus">
-                    <span class="group pa-2">
-                        <v-icon large @click="star">{{(data.star) ? 'star' : 'star_outline'}}</v-icon>
-                        <v-icon large @click="isFull = !isFull">info</v-icon>
-                    </span>
+				<v-btn icon @click="star">
+					<v-icon>{{(data.star) ? 'star' : 'star_outline'}}</v-icon>
+				</v-btn>
+				<v-btn icon @click="isFull = !isFull">
+					<v-icon>info</v-icon>
+				</v-btn>
             </div>
-
-            <v-icon large class="backbutton" @click="$router.go(-1)">arrow_back</v-icon>
+			<div class="backbutton">
+				<v-btn icon @click="$router.go(-1)">
+					<v-icon class="button">arrow_back</v-icon>
+				</v-btn>
+			</div>
           </div>
       </v-flex>
         <transition name="expand">
@@ -53,6 +58,10 @@ export default {
 				album: { name: '', range:[0, 0] }
 			}
 		}
+	},
+	watch: {
+		// call again the method if the route changes
+		'$route': 'fetchData'
 	},
 	computed: {
 		source() {
@@ -98,8 +107,6 @@ export default {
 					photo: parseInt(this.$route.query.photo) + 1
 				}
 			})
-			this.getMeta()
-			this.preload()
 		},
 		selectPrev() {
 			this.$router.replace({
@@ -109,8 +116,6 @@ export default {
 					photo: parseInt(this.$route.query.photo) - 1
 				}
 			})
-			this.getMeta()
-			this.preload()
 		},
 		preload() {
 			const pre = new Image()
@@ -138,7 +143,7 @@ export default {
 				'/l'
 		},
 
-		getMeta() {
+		fetchData() {
 			axios
 				.get(
 					'http://127.0.0.1:5000/api/metadata/' +
@@ -153,6 +158,7 @@ export default {
 				.catch(e => {
 					console.log(e.message)
 				})
+			this.preload()
 		},
 
 		star() {
@@ -172,7 +178,7 @@ export default {
 	},
 
 	created() {
-		this.getMeta()
+		this.fetchData()
 	}
 }
 </script>
@@ -209,6 +215,10 @@ export default {
 	background-color: #000000;
 }
 
+.btn {
+	color: rgba(255, 255, 255, 0.85)
+}
+
 .expand-enter-active,
 .expand-leave-active {
 	transition-property: transform, max-width, opacity;
@@ -239,14 +249,7 @@ body {
 	top: 0;
 	right: 0;
 	z-index: 20;
-	color: white;
 	padding: 5px;
-}
-
-.menus i {
-	color: rgba(255, 255, 255, 0.85);
-	margin-left: 5px;
-	cursor: pointer;
 }
 
 .backbutton {
@@ -261,12 +264,12 @@ body {
 
 img {
 	max-width: 100%;
-	max-height: 99vh;
 	/*left: 50%;
 	transform: translate(-50%, 0);*/
 	animation-name: zoom;
 	animation-duration: 0.8s;
-	/*height: 100vh;*/
+	max-height: 100vh;
+	display: block;
 }
 
 .imgwrap {

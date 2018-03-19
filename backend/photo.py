@@ -11,13 +11,20 @@ from timeit import default_timer as timer
 import inspect
 from profiler import profile
 import io
+from fractions import Fraction
+from faces import get_faces
+from structure import data_file
+from CONFIG import *
+
+"""
+curframe = inspect.currentframe()
+calframe = inspect.getouterframes(curframe, 2)
+print('caller name:', calframe[1][3])
+"""
 
 class Photo:
 	#@profile(sort_args=['cumulative'], )
 	def __init__(self, album, key=None, file=None):
-		curframe = inspect.currentframe()
-		calframe = inspect.getouterframes(curframe, 2)
-		#print("photo", album, key, 'caller name:', calframe[1][3])#
 		self.key = key
 		self.file = file
 		if type(album) == int:
@@ -33,9 +40,8 @@ class Photo:
 			self.path = self.album.path + '/' + self.file
 		else:
 			if self.key == "A":
-				self.key = randint(0, len(self.album.data.keys()) - 1)
+				self.key = randint(0, len(self.album.data['photos'].keys()) - 1)
 			data = self.stored_data()
-
 			self.star = data['star']
 			self.file = data['file']
 			self.tags = data['tags']
@@ -46,9 +52,14 @@ class Photo:
 		self.date = self.get_date()
 
 	def stored_data(self):
-		if str(self.key) in self.album.data.keys():
-			return self.album.data[str(self.key)]
-		return {}
+		try:
+			if str(self.key) in self.album.data['photos'].keys():
+				return self.album.data['photos'][str(self.key)]
+			"""else:
+				print(self.album.data['photos'], self.key)"""
+			return {}
+		except KeyError:
+			return {}
 
 	def data(self):
 		return {'file': self.file, 'date': self.date.strftime('%Y:%m:%d %H:%M:%S'), 'modified': self.modified, 'star': self.star, 'tags': [], 'people': []}
@@ -70,28 +81,65 @@ class Photo:
 		m.update(img.tobytes())
 		self.hash = m.hexdigest()
 
+	def get_faces(self):
+		return get_faces(self.path)
+
 	def get_modified(self):
 		return os.path.getmtime(self.path)
 
 	#@profile(sort_args=['cumulative'], )
 	def resize(self, mode):
 		SIZES = {'xs': 16, 's': 128, 'm': 256, 'l': 770}
+		#SIZES = {'xs': 15, 's': 120, 'm': 240, 'l': 770}
 		baseheight = SIZES[mode]
-		if baseheight < 300:
+		if baseheight < 200:
 			img = self.get_thumbnail()
+			method = Image.NEAREST
 		else:
 			img = Image.open(self.path)
+			method = Image.ANTIALIAS
+		img = self.rotate(img)
 		hpercent = (baseheight / float(img.size[1]))
 		wsize = int((float(img.size[0]) * float(hpercent)))
-		img = img.resize((wsize, baseheight), Image.NEAREST)
+		img = img.resize((wsize, baseheight), method)
 		return img
+
+	"""def ratio(self):
+		exif = self.exif()
+		h = exif['EXIF ExifImageLength'][0]
+		w = exif['EXIF ExifImageWidth'][0]
+		o = exif['Image Orientation'][0]
+		f =  Fraction(w, h)
+		if o in [6, 8]:
+			f = 1/f
+			
+			192 × 256 
+		return str(f.numerator) + "x" + str(f.denominator)"""
+
+
+	def rotate(self, img):
+		ORIENTATIONS = {
+			3: ("Rotated 180 degrees", Image.ROTATE_180),
+			6: ("Rotated 90 degrees", Image.ROTATE_270),
+			8: ("Rotated 270 degrees", Image.ROTATE_90)
+		}
+		try:
+			orientation = self.get_exif('Image Orientation')[0]
+		except KeyError:
+			return img
+		if orientation in [3, 6, 8]:
+			degrees = ORIENTATIONS[orientation][1]
+			img = img.transpose(degrees)
+			return img
+		else:
+			return img
 
 	def exif(self):
 		with open(self.path, 'rb') as f:
 			return {k: v.values for k,v in exifread.process_file(f, details=False).items()}
 
 	def update(self, data):
-		with self.album.data_file(self.album.path) as d:
+		with data_file(self.album.path) as d:
 			for k, v in data.items():
 				d[self.key][k] = v
 
@@ -139,4 +187,5 @@ class Photo:
 		out['album']['id'] = self.album.key
 		out['album']['range'] = self.album.range()
 		out['album']['size'] = self.album.size()
+		out['faces'] = self.get_faces()[0]
 		return out

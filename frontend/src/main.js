@@ -6,11 +6,10 @@ import './registerServiceWorker'
 import Vuetify from 'vuetify'
 import 'vuetify/dist/vuetify.min.css'
 import VueClazyLoad from 'vue-clazy-load'
-import ProgressiveImage from 'progressive-image/dist/vue'
+import VueProgressiveImage from 'vue-progressive-image'
+//Vue.use(require('vue-masonry').VueMasonryPlugin);
 
-Vue.use(ProgressiveImage, {
-	removePreview: true,
-  });
+Vue.use(VueProgressiveImage)
 
 
 Vue.use(VueClazyLoad)

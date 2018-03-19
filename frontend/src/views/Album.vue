@@ -1,9 +1,30 @@
 <template>
-<v-container grid-list-md>
-    <album-thumbnail v-for="album in albums" :albumid="album" :key="'a' + album"/>
+<div>
+	<v-toolbar flat>
+		<v-btn icon @click="$router.go(-1)">
+			<v-icon>arrow_back</v-icon>
+		</v-btn>
+		<v-spacer></v-spacer>
+		<v-btn icon>
+			<v-icon>more_vert</v-icon>
+		</v-btn>
+	</v-toolbar>
+<v-container>
+	<v-layout row>
+		<v-text-field
+          name="input-1"
+          id="title"
+		  :hint="albumRange"
+		  persistent-hint
+		  :value="name"
+        ></v-text-field>
+	</v-layout>
+	<v-layout row wrap>
+    <album-thumbnail v-for="album in albums" :albumid="album" :key="'a' + album" :size="256"/>
             <thumbnail v-for="photo in photos" :key="photo" :photoid="photo" :album="$route.query.album" :size="256"/>
-
+	</v-layout>
 </v-container>
+</div>
 </template>
 
 <script>
@@ -20,45 +41,159 @@ export default {
 
 	data() {
 		return {
-			fetching: false,
 			albums: [],
-			photos: []
+			photos: [],
+			name: '',
+			range: [0, 0]
 		}
 	},
+	watch: {
+		// call again the method if the route changes
+		'$route': 'fetchData'
+	},
+	computed: {
+		albumRange() {
+			var monthNames = [
+				'Jan',
+				'Feb',
+				'Mar',
+				'Apr',
+				'May',
+				'Jun',
+				'Jul',
+				'Aug',
+				'Sep',
+				'Oct',
+				'Nov',
+				'Dec'
+			]
 
-	methods: {
-		fetchMeta() {
-			if (this.fetching != true) {
-				this.fetching = true
-				axios
-					.get('http://127.0.0.1:5000/api/album_data/' + this.$route.query.album)
-					.then(response => {
-						this.fetching = false
-						this.albums = response.data.albums
-						this.photos = response.data.photos
-						console.log(this.photos)
-					})
-					.catch(e => {
-						console.log(e.message)
-					})
+			var d1 = new Date(this.range[0])
+			var d2 = new Date(this.range[1])
+			if (d1.getMonth() == d2.getMonth()) {
+				if (d1.getDate() == d2.getDate()) {
+					return (
+						d1.getDate() +
+						' ' +
+						monthNames[d1.getMonth()] +
+						' ' +
+						d1.getFullYear()
+					)
+				}
+				return (
+					d1.getDate() +
+					' - ' +
+					d2.getDate() +
+					' ' +
+					monthNames[d1.getMonth()] +
+					' ' +
+					d1.getFullYear()
+				)
+			} else {
+				return (
+					d1.getDate() +
+					' ' +
+					monthNames[d1.getMonth()] +
+					' - ' +
+					d2.getDate() +
+					' ' +
+					monthNames[d2.getMonth()] +
+					' ' +
+					d1.getFullYear()
+				)
 			}
 		}
 	},
 
+	methods: {
+		fetchData() {
+			axios
+				.get(
+					'http://127.0.0.1:5000/api/album_data/' +
+						this.$route.query.album +
+						'/l'
+				)
+				.then(response => {
+					this.albums = response.data.albums
+					this.photos = response.data.photos
+					this.name = response.data.name
+					this.range = response.data.range
+					console.log(response, this.$route.query.album)
+				})
+				.catch(e => {
+					console.log(e.message)
+				})
+		}
+	},
+
 	created() {
-		this.fetchMeta()
+		this.fetchData()
 	}
 }
 </script>
 
+
 <style>
+#title {
+	font-size: 56px;
+	height: auto;
+}
+
+.input-group__input:hover + .input-group__details::before {
+	background-color: rgba(0, 0, 0, 0.12) !important;
+}
+
+.input-group__details::before {
+	background-color: transparent !important;
+}
 
 .theme--light .input-group.input-group--solo-inverted {
-    background: rgba(255,255,255, .16);
+	background: rgba(255, 255, 255, 0.16);
+}
+
+.input-group__hint {
+	font-size: 14px;
+}
+
+.input-group {
+	padding-top: 0;
 }
 
 .theme--light .input-group.input-group--solo-inverted.input-group--focused {
-    background: #d4d3d3;
+	background: #d4d3d3;
 }
 
+.container .thumb-pad {
+	flex: auto;
+	padding: 2px;
+}
+
+.container .thumb-pad .photo {
+	margin-bottom: 0;
+	width: 100%;
+	height: auto !important;
+}
+
+.container .thumb-pad .photo .progressive-image {
+	width: 100%;
+	height: auto;
+}
+
+.container .thumb-pad .photo .progressive-image-main {
+	height: auto;
+	width: 100%;
+	display: block;
+}
+
+.aspect-4x3 {
+	flex-grow: 1.5 !important;
+}
+
+.aspect-3x4 {
+	flex-grow: 0.85 !important;
+}
+
+.theme--light .toolbar {
+	background-color: #fafafa;
+}
 </style>

@@ -1,22 +1,28 @@
-<template>
-  <v-card hover class="photo" :height="size + 'px'">
-    <!--img :src="source" @click="activate"-->
-    <div class="progressive" @click="activate" v-on:mouseover="hover = true" v-on:mouseleave="hover = false">
-      <img class="preview" v-progressive="source + '/s'" :src="source + '/xs'"/>
-      <transition name="hover">
-    <div class="caption" v-show="hover">
-                            <div><p>{{fdate}}</p>
-                            </div>
-														<div><p>{{ftime}}</p>
-                            </div>
-                        </div>
-      </transition>
-    </div>
-  </v-card>
+<template >
+	<div :class="['thumb-pad', 'aspect-' + ratio]">
+		<v-card hover class="photo" :height="size + 'px'" v-on:mouseover="hover = true" v-on:mouseleave="hover = false" v-on:click.native.stop="activate">
+		<progressive-img
+			:src="source + modifier"
+			
+			@onLoad="get_ratio"
+			/>
+			<transition name="hover">
+				
+		<div class="caption" v-show="hover">
+								<div><p>{{fdate}}</p>
+								</div>
+															<div><p>{{ftime}}</p>
+								</div>
+							</div>
+		</transition>
+	</v-card> 
+	</div>
 </template>
 
 <script>
+//:placeholder="source + '/xs'"
 import axios from 'axios'
+import imagesLoaded from 'vue-images-loaded'
 
 export default {
 	name: 'Thumbnail',
@@ -24,9 +30,14 @@ export default {
 	data() {
 		return {
 			hover: false,
-			date: new Date()
+			date: new Date(),
+			fetched: false,
+			ratio: '4x3'
 		}
 	},
+	directives: {
+        imagesLoaded
+    },
 	methods: {
 		activate() {
 			this.$router.push({
@@ -34,17 +45,44 @@ export default {
 				query: { album: this.album, photo: this.photoid }
 			})
 		},
+		loaded() {
+			this.fetched = true
+		},
 		mouseOver() {
 			this.hover = !this.hover
+		},
+		get_ratio() {
+			var c = this.$children[0].$children[0].$el.children
+			let img = c[c.length - 1].children[0]
+			img.onload = function(i){
+				img = i.target
+				var w = img.naturalWidth
+				var h = img.naturalHeight
+				var r = w / h
+				if (Math.round(r * 3, 2) == 4) {
+					this.ratio = '4x3'
+				}
+				if (Math.round(r * 4, 2) == 3) {
+					this.ratio = '3x4'
+				}
+			}.bind(this)
+			
 		},
 		fetchMeta() {
 			if (this.fetching != true) {
 				this.fetching = true
 				axios
-					.get('http://127.0.0.1:5000/api/metadata/' + this.album + '/' + this.photoid + '/s')
+					.get(
+						'http://127.0.0.1:5000/api/metadata/' +
+							this.album +
+							'/' +
+							this.photoid +
+							'/s'
+					)
 					.then(response => {
 						this.fetching = false
 						this.date = new Date(response.data.date)
+						//this.ratio = response.data.ratio
 					})
 					.catch(e => {
 						console.log(e.message)
@@ -63,20 +101,36 @@ export default {
 			)
 		},
 
+		modifier() {
+			if (parseInt(this.size) > 150) {
+				return '/m'
+			} else {
+				return '/s'
+			}
+		},
+
 		fdate() {
 			var date = this.date
 			var monthNames = [
-				"January", "February", "March",
-				"April", "May", "June", "July",
-				"August", "September", "October",
-				"November", "December"
-			];
+				'January',
+				'February',
+				'March',
+				'April',
+				'May',
+				'June',
+				'July',
+				'August',
+				'September',
+				'October',
+				'November',
+				'December'
+			]
 
-			var day = date.getDate();
-			var monthIndex = date.getMonth();
-			var year = date.getFullYear();
+			var day = date.getDate()
+			var monthIndex = date.getMonth()
+			var year = date.getFullYear()
 
-			return day + ' ' + monthNames[monthIndex] + ' ' + year;
+			return day + ' ' + monthNames[monthIndex] + ' ' + year
 		},
 
 		ftime() {
@@ -85,11 +139,11 @@ export default {
 			var hour = date.getHours()
 			var minute = date.getMinutes().toString()
 
-			return hour + ":" + minute.padStart(2, '0')
+			return hour + ':' + minute.padStart(2, '0')
 		}
 	},
 
-	created() {
+	mounted() {
 		this.fetchMeta()
 	}
 }
@@ -108,17 +162,8 @@ export default {
 	opacity: 0;
 }
 
-.progressive {
-	height: inherit
-}
-
-.progressive img {
-	height: inherit;
-	width: auto;
-}
-
 .photo {
-  margin-right: 5px;
+  margin-bottom: 5px;
   display: inline-block;
 }
 
@@ -158,5 +203,21 @@ export default {
 
 p {
     margin-bottom: 0;
+}
+</style>
+
+<style>
+.progressive-image-main {
+	height: inherit;
+	width: auto;
+	position: relative;
+}
+.progressive-image-wrapper {
+	padding-bottom: 0 !important;
+	height: inherit;
+}
+
+.progressive-image {
+	height: inherit;
 }
 </style>
