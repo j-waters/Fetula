@@ -15,6 +15,7 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 @app.route('/api/albums')
 def get_albums():
+	print("albums")
 	#structure.album_structure()
 	struct = structure.get_albums(1)
 	albums = []
@@ -41,6 +42,7 @@ def serve_image(image, name):
 
 tim = 0
 @app.route('/api/image/<album>/<image>/<mode>')
+#@profile(sort_args=['cumulative'], )
 def fetch_image(album, image, mode):
 	t = timer()
 	p = Photo(int(album), image)
@@ -49,6 +51,10 @@ def fetch_image(album, image, mode):
 	tim += timer() - t
 	#print(tim)
 	return serve_image(img, p.file)
+
+@app.route('/api/person_image/<name>')
+def person_image(name):
+	return flask.send_file('faces/' + name + '.jpg')
 
 tim = 0
 @app.route('/api/metadata/<album>/<image>/<mode>')
@@ -75,5 +81,5 @@ def update(album, image):
 
 
 if __name__ == "__main__":
-	#structure.update()
-	app.run(debug=True, threaded=True)
+	structure.update()
+	app.run(debug=True, threaded=False)

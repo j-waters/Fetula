@@ -71,7 +71,7 @@ class Album:
 			oldData = self.data['photos']
 		except:
 			oldData = {}
-		if len(files) != len(oldData.keys()) or (datetime.now() - self.last_updated()).seconds > 3600 or True:
+		if len(files) != len(oldData.keys()) or (datetime.now() - self.last_updated()).seconds > 3600:
 			newData = []
 			for file in files:
 				#print(files.index(file), len(files))

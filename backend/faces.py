@@ -3,11 +3,12 @@ import cv2
 import os
 from structure import data_file
 from CONFIG import *
+from numpy import array
 
 def fetch_models():
 	with data_file(FOLDER) as dat:
 		faces = dat['faces']
-	return faces.keys(), faces.values()
+	return list(faces.keys()), [array(f) for f in faces.values()]
 
 def get_faces(path):
 	known_names, known_faces = fetch_models()

@@ -24,16 +24,7 @@
                     <v-card>
                         <v-card-title style="padding-bottom: 4px;"><h3>People</h3></v-card-title>
                         <v-card-text style="padding-bottom: 8px; padding-top: 0;">
-                        <v-avatar
-                        :size="52"
-                        class="grey lighten-4">
-                        <img src="@/assets/logo.png" alt="avatar">
-                        </v-avatar>
-						<v-avatar
-                        :size="52"
-                        class="grey lighten-4">
-                        <v-icon color="grey lighten-1" x-large>add</v-icon>
-                        </v-avatar>
+                        <person v-for="person in data.faces" :key="person[1]" :person="person[1]"/>
                         </v-card-text>
                     </v-card>
                     <br/>
@@ -113,11 +104,13 @@
 
 <script>
 import axios from 'axios'
+import Person from '@/components/Person.vue'
 
 export default {
 	name: 'view-details',
 	props: ['data'],
 	components: {
+        Person
 		
 	},
 	data() {

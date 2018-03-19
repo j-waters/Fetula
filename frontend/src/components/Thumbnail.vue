@@ -3,7 +3,6 @@
 		<v-card hover class="photo" :height="size + 'px'" v-on:mouseover="hover = true" v-on:mouseleave="hover = false" v-on:click.native.stop="activate">
 		<progressive-img
 			:src="source + modifier"
-			
 			@onLoad="get_ratio"
 			/>
 			<transition name="hover">
@@ -20,7 +19,7 @@
 </template>
 
 <script>
-//:placeholder="source + '/xs'"
+//:placeholder="source + '/xs'"			//this does not work
 import axios from 'axios'
 import imagesLoaded from 'vue-images-loaded'
 
@@ -82,6 +81,7 @@ export default {
 					.then(response => {
 						this.fetching = false
 						this.date = new Date(response.data.date)
+						console.log("fetched")
 						//this.ratio = response.data.ratio
 					})
 					.catch(e => {
@@ -154,7 +154,7 @@ export default {
 .hover-enter-active,
 .hover-leave-active {
 	transition-property: opacity;
-	transition-duration: 0.5s;
+	transition-duration: 0.2s;
 }
 
 .hover-enter,

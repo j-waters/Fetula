@@ -187,5 +187,5 @@ class Photo:
 		out['album']['id'] = self.album.key
 		out['album']['range'] = self.album.range()
 		out['album']['size'] = self.album.size()
-		out['faces'] = self.get_faces()[0]
+		out['faces'] = list(self.get_faces())
 		return out

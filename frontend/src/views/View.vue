@@ -13,6 +13,9 @@
                             </div>
                         </div>
                     </clazy-load>
+					<transition-group name="face">
+						<face v-if="!isFull" v-for="face in data.faces" :key="face[1]" :face="face"/>
+					</transition-group>
                     
                 </div>
 				<img v-if="data.album.size > parseInt(this.$route.query.photo) + 1" src="@/assets/arrow.svg" class="nav-next" v-on:click="selectNext()">
@@ -45,11 +48,12 @@
 <script>
 import axios from 'axios'
 import ViewDetails from '@/components/ViewDetails.vue'
+import Face from '@/components/Face.vue'
 //router.replace won't add new history
 export default {
 	name: 'viewer',
 	//props: ['album', 'photo'],
-	components: { ViewDetails },
+	components: { ViewDetails, Face },
 	data() {
 		return {
 			isFull: true,
@@ -233,6 +237,22 @@ export default {
 .expand-leave-active {
 	flex-basis: 0;
 	max-width: 0;
+	opacity: 0;
+}
+
+
+.face-enter-active,
+.face-leave-active {
+	transition-property: opacity;
+	transition-duration: 0.8s;
+}
+
+.face-enter-active {
+	transition-delay: 0.1s;
+}
+
+.face-enter,
+.face-leave-active {
 	opacity: 0;
 }
 

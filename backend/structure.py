@@ -4,6 +4,8 @@ from json import dump, loads, load
 from json.decoder import JSONDecodeError
 import face_recognition
 import random
+from timeit import default_timer as timer
+
 
 from CONFIG import *
 
@@ -31,7 +33,7 @@ def get_models():
 	for n in names:
 		image = face_recognition.load_image_file('faces/' + n)
 		encoding = face_recognition.face_encodings(image)[0]
-		faces[n.split(".")[0]] = list(encoding)
+		faces[n.split(".")[0]] = encoding.tolist()
 
 	with data_file(FOLDER) as dat:
 		dat['faces'] = faces
@@ -46,12 +48,19 @@ class data_file:
 		self.key = gkey
 	def __enter__(self):
 		# TODO: it's better to ask for forgiveness than permission
+		t = timer()
 		if not os.path.exists(self.path + '/.fetula'):
 			self.data = {}
 		else:
-			with open(self.path + '/.fetula', 'r') as file:
-				self.data = load(file)
-
+			#print("open", self.key, self.path)
+			try:
+				with open(self.path + '/.fetula', 'r') as file:
+					self.data = load(file)
+			except JSONDecodeError:
+				print("JSON ERROR", self.path)
+				self.data = {}#self.__enter__()
+			#print("close", self.key)
+		#print(timer() - t)
 		return self.data
 
 	def __exit__(self, a, b, c):
