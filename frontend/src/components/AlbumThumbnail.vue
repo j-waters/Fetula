@@ -1,10 +1,11 @@
 <template>
-	<div :class="['thumb-pad', 'aspect-' + ratio]">
-		<v-card hover class="photo" :height="size + 'px'" v-on:mouseover="hover = true" v-on:mouseleave="hover = false" v-on:click.native.stop="activate">
-			<progressive-img
+	<div :class="[flex ? 'thumb-flex' : 'thumb-block', 'aspect-' + ratio]">
+		<v-card hover class="photo" :style="{'min-height': size + 'px'}" v-on:mouseover="hover = true" v-on:mouseleave="hover = false" v-on:click.native.stop="activate">
+			<!--progressive-img
 				:src="source + modifier"
 				@onLoad="get_ratio"
-				/>
+				/-->
+				<lazy-image :placeholder="source + '/xs'" :src="source + modifier" :flex="flex"/>
 				<transition name="hover">
 					
 			<div class="caption" v-show="true">
@@ -21,17 +22,21 @@
 <script>
 //:placeholder="source + '/xs'"	
 import axios from 'axios'
+import LazyImage from '@/components/LazyImage.vue'
+
 
 export default {
 	name: 'album-thumbnail',
-	props: ['albumid', 'size'],
+	props: ['albumid', 'size', 'flex'],
+	components: {LazyImage},
 	data() {
 		return {
 			hover: false,
 			fetching: false,
 			name: '',
 			albums: [],
-			ratio: '4x3'
+			ratio: '4x3',
+			cover: null
 		}
 	},
 	methods: {
@@ -66,6 +71,7 @@ export default {
 					.then(response => {
 						this.fetching = false
 						this.name = response.data.name
+						this.cover = response.data.cover
 					})
 					.catch(e => {
 						console.log(e.message)
@@ -76,7 +82,10 @@ export default {
 
 	computed: {
 		source() {
-			return 'http://127.0.0.1:5000/api/image/' + this.albumid + '/A'
+			if (this.cover != null){
+				return 'http://127.0.0.1:5000/api/image/' + this.cover
+			}
+			return ''
 		},
 		
 		modifier() {
@@ -97,6 +106,17 @@ export default {
 
 <style scoped lang="css">
 
+.thumb-flex {
+	flex: auto;
+	margin: 2px;
+	
+}
+
+.thumb-block {
+	display: inline-block;
+	margin-right: 5px;
+}
+
 .hover-enter-active,
 .hover-leave-active {
 	transition-property: opacity;
@@ -112,6 +132,7 @@ export default {
 .photo {
   margin-bottom: 5px;
   display: inline-block;
+  min-width: 100%;
 }
 
 img {

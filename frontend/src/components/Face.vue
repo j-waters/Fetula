@@ -24,13 +24,13 @@ export default {
 
 	computed: {
 		rect(){
-			return this.face[0]
+			return this.face.position
 		}
 	},
 
 	created() {
 		EventBus.$on('face-hover', function(face){
-			if (face == this.face[1]){
+			if (face == this.face.name){
 				this.hovered = true
 			}
 			else {
@@ -41,7 +41,7 @@ export default {
 
 		EventBus.$on('face-out', function(face){
 			
-			if (face == this.face[1]){
+			if (face == this.face.name){
 				this.hovered = false
 			}
 			

@@ -14,7 +14,7 @@
                         </div>
                     </clazy-load>
 					<transition-group name="face">
-						<face v-if="!isFull" v-for="face in data.faces" :key="face[1]" :face="face"/>
+						<face v-if="!isFull" v-for="face in data.people" :key="face.name" :face="face"/>
 					</transition-group>
                     
                 </div>
@@ -59,7 +59,8 @@ export default {
 			isFull: true,
 			data: {
 				tags: ['dog', 'cat', 'person', 'city'],
-				album: { name: '', range:[0, 0] }
+				album: { name: '', range:[0, 0] },
+				people: []
 			}
 		}
 	},
@@ -71,8 +72,6 @@ export default {
 		source() {
 			return (
 				'http://127.0.0.1:5000/api/image/' +
-				this.$route.query.album +
-				'/' +
 				this.$route.query.photo
 			)
 		},
@@ -125,24 +124,18 @@ export default {
 			const pre = new Image()
 			pre.src =
 				'http://127.0.0.1:5000/api/image/' +
-				this.$route.query.album +
-				'/' +
 				this.$route.query.photo +
 				'/l'
 
 			const pre1 = new Image()
 			pre1.src =
 				'http://127.0.0.1:5000/api/image/' +
-				this.$route.query.album +
-				'/' +
 				(parseInt(this.$route.query.photo) + 1) +
 				'/l'
 
 			const pre2 = new Image()
 			pre2.src =
 				'http://127.0.0.1:5000/api/image/' +
-				this.$route.query.album +
-				'/' +
 				(parseInt(this.$route.query.photo) - 1) +
 				'/l'
 		},
@@ -151,8 +144,6 @@ export default {
 			axios
 				.get(
 					'http://127.0.0.1:5000/api/metadata/' +
-						this.$route.query.album +
-						'/' +
 						this.$route.query.photo +
 						'/n'
 				)
@@ -168,9 +159,7 @@ export default {
 		star() {
 			this.data.star = !this.data.star
 			axios.post(
-				'http://127.0.0.1:5000/api/update/' +
-					this.$route.query.album +
-					'/' +
+				'http://127.0.0.1:5000/api/update_image/' +
 					this.$route.query.photo,
 				{ star: this.data.star }
 			)

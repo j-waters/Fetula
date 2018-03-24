@@ -1,10 +1,11 @@
 <template >
-	<div :class="['thumb-pad', 'aspect-' + ratio]">
-		<v-card hover class="photo" :height="size + 'px'" v-on:mouseover="hover = true" v-on:mouseleave="hover = false" v-on:click.native.stop="activate">
-		<progressive-img
+	<div :class="[flex ? 'thumb-flex' : 'thumb-block', 'aspect-' + ratio]">
+		<v-card hover class="photo" :style="{'min-height': size + 'px'}" v-on:mouseover="hover = true" v-on:mouseleave="hover = false" v-on:click.native.stop="activate">
+		<!--progressive-img
 			:src="source + modifier"
 			@onLoad="get_ratio"
-			/>
+			/-->
+			<lazy-image :placeholder="source + '/xs'" :src="source + modifier"/>
 			<transition name="hover">
 				
 		<div class="caption" v-show="hover">
@@ -22,10 +23,12 @@
 //:placeholder="source + '/xs'"			//this does not work
 import axios from 'axios'
 import imagesLoaded from 'vue-images-loaded'
+import LazyImage from '@/components/LazyImage.vue'
 
 export default {
 	name: 'Thumbnail',
-	props: ['album', 'photoid', 'size'],
+	props: ['album', 'photoid', 'size', 'flex'],
+	components: { LazyImage },
 	data() {
 		return {
 			hover: false,
@@ -73,15 +76,12 @@ export default {
 				axios
 					.get(
 						'http://127.0.0.1:5000/api/metadata/' +
-							this.album +
-							'/' +
 							this.photoid +
 							'/s'
 					)
 					.then(response => {
 						this.fetching = false
 						this.date = new Date(response.data.date)
-						console.log("fetched")
 						//this.ratio = response.data.ratio
 					})
 					.catch(e => {
@@ -95,8 +95,6 @@ export default {
 		source() {
 			return (
 				'http://127.0.0.1:5000/api/image/' +
-				this.album +
-				'/' +
 				this.photoid
 			)
 		},
@@ -151,6 +149,17 @@ export default {
 
 <style scoped lang="css">
 
+.thumb-flex {
+	flex: auto;
+	margin: 2px;
+	
+}
+
+.thumb-block {
+	display: inline-block;
+	margin-right: 5px;
+}
+
 .hover-enter-active,
 .hover-leave-active {
 	transition-property: opacity;
@@ -165,6 +174,7 @@ export default {
 .photo {
   margin-bottom: 5px;
   display: inline-block;
+  min-width: 100%;
 }
 
 .caption {
@@ -203,21 +213,5 @@ export default {
 
 p {
     margin-bottom: 0;
-}
-</style>
-
-<style>
-.progressive-image-main {
-	height: inherit;
-	width: auto;
-	position: relative;
-}
-.progressive-image-wrapper {
-	padding-bottom: 0 !important;
-	height: inherit;
-}
-
-.progressive-image {
-	height: inherit;
 }
 </style>

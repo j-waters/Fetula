@@ -2,9 +2,12 @@ import os
 from datetime import datetime
 from json import dump, loads, load
 from json.decoder import JSONDecodeError
-import face_recognition
 import random
 from timeit import default_timer as timer
+from database import db
+
+from album import Album
+from person import Person
 
 
 from CONFIG import *
@@ -12,63 +15,38 @@ from CONFIG import *
 def album_structure():
 	albums = []
 	for dirpath, dirnames, filenames in os.walk(FOLDER):
-		if dirpath != FOLDER:
-			albums.append(dirpath)
-	data = {i: albums[i] for i in range(len(albums))}
-	with data_file(FOLDER) as dat:
-		dat['albums'] = data
-
-def get_albums(depth=1):
-	from album import Album
-	with data_file(FOLDER) as dat:
-		struct = dat['albums']
-	return [Album(k) for k,v in struct.items() if len(v.split('\\')) == depth + 1]
+		albums.extend(dirnames)
+		break
+	for album in albums:
+		if Album.query.filter_by(name=album).first() is None:
+			a = Album(album, None)
+			db.session.add(a)
+	db.session.commit()
 
 def get_models():
 	names = []
 	for dirpath, dirnames, filenames in os.walk('faces'):
-		names.extend(filenames)
+		names.extend(dirnames)
 		break
 	faces = {}
 	for n in names:
-		image = face_recognition.load_image_file('faces/' + n)
-		encoding = face_recognition.face_encodings(image)[0]
-		faces[n.split(".")[0]] = encoding.tolist()
+		if Person.query.filter_by(name=n).first() is None:
+			p = Person(n)
+			db.session.add(p)
+	db.session.commit()
 
-	with data_file(FOLDER) as dat:
-		dat['faces'] = faces
-
-
-gkey = 0
-class data_file:
-	def __init__(self, path):
-		self.path = path
-		global gkey
-		gkey += 1
-		self.key = gkey
-	def __enter__(self):
-		# TODO: it's better to ask for forgiveness than permission
-		t = timer()
-		if not os.path.exists(self.path + '/.fetula'):
-			self.data = {}
-		else:
-			#print("open", self.key, self.path)
-			try:
-				with open(self.path + '/.fetula', 'r') as file:
-					self.data = load(file)
-			except JSONDecodeError:
-				print("JSON ERROR", self.path)
-				self.data = {}#self.__enter__()
-			#print("close", self.key)
-		#print(timer() - t)
-		return self.data
-
-	def __exit__(self, a, b, c):
-		with open(self.path + '/.fetula', 'w') as file:
-			dump(self.data, file)
+def initdb():
+	db.reflect()
+	db.drop_all()
+	db.create_all()
+	db.session.commit()
 
 
-def update():
-	if not os.path.exists(FOLDER + '/.fetula') or (datetime.now() - datetime.fromtimestamp(os.path.getmtime(FOLDER + '/.fetula'))).seconds > 3600:
-		album_structure()
-		get_models()
+def update(app):
+	if False:
+		with app.app_context():
+			initdb()
+			album_structure()
+			get_models()
+	else:
+		pass

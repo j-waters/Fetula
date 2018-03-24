@@ -15,23 +15,24 @@
                             small
                             @input="remove(data.item)"
                             :selected="data.selected">
-                            <strong>{{ data.item }}</strong>
+                            <strong>{{ data.item.name }}</strong>
                         </v-chip>
                         </template>
                     </v-select>
                     </v-card>
-                    <br/>
-                    <v-card>
+                    <br v-if="data.people.length > 0"/>
+                    <v-card v-if="data.people.length > 0">
                         <v-card-title style="padding-bottom: 4px;"><h3>People</h3></v-card-title>
                         <v-card-text style="padding-bottom: 8px; padding-top: 0;">
-                        <person v-for="person in data.faces" :key="person[1]" :person="person[1]"/>
+                        <person v-for="person in data.people" :key="person.name" :person="person" :data="data"/>
+						<person :key="'add'" :person="{name: '%add'}" :data="data"/>
                         </v-card-text>
                     </v-card>
                     <br/>
 					<v-card>
 						<v-card-text style="padding-bottom: 0; padding-top: 0;">
 						<v-list two-line subheader style="padding-bottom: 0;">
-						<v-list-tile avatar inactive @click="" style="cursor: pointer">
+						<v-list-tile avatar inactive v-on:click.native.stop="goAlbum" style="cursor: pointer">
                                     <v-list-tile-avatar>
                                         <v-avatar
 										tile
@@ -110,12 +111,19 @@ export default {
 	name: 'view-details',
 	props: ['data'],
 	components: {
-        Person
-		
+		Person
 	},
 	data() {
 		return {
-			fetching: false,
+			fetching: false
+		}
+	},
+	methods: {
+		goAlbum() {
+			this.$router.push({
+				name: 'album',
+				query: { album: this.data.album.id }
+			})
 		}
 	},
 
@@ -123,15 +131,23 @@ export default {
 		month() {
 			var date = new Date(this.data.date)
 			var monthNames = [
-				"January", "February", "March",
-				"April", "May", "June", "July",
-				"August", "September", "October",
-				"November", "December"
-			];
+				'January',
+				'February',
+				'March',
+				'April',
+				'May',
+				'June',
+				'July',
+				'August',
+				'September',
+				'October',
+				'November',
+				'December'
+			]
 
 			var monthIndex = date.getMonth()
 
-			return monthNames[monthIndex];
+			return monthNames[monthIndex]
 		},
 
 		date() {
@@ -141,38 +157,73 @@ export default {
 
 		day() {
 			var date = new Date(this.data.date)
-			var days = ["Sun", "Mon", "Tue", "Wed", "Thur", "Fri", "Sat"]
+			var days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thur', 'Fri', 'Sat']
 
 			return days[date.getDay()]
 		},
 
 		time() {
 			var date = new Date(this.data.date)
-			return date.getHours() + ":" + date.getMinutes()
+			return date.getHours() + ':' + date.getMinutes()
 		},
 
 		albumImg() {
-			return 'http://127.0.0.1:5000/api/image/' + this.data.album.id + '/A/s'
+			return (
+				'http://127.0.0.1:5000/api/image/' +
+				this.data.album.cover +
+				'/s'
+			)
 		},
 
 		albumRange() {
 			var monthNames = [
-				"Jan", "Feb", "Mar",
-				"Apr", "May", "Jun", "Jul",
-				"Aug", "Sep", "Oct",
-				"Nov", "Dec"
-			];
+				'Jan',
+				'Feb',
+				'Mar',
+				'Apr',
+				'May',
+				'Jun',
+				'Jul',
+				'Aug',
+				'Sep',
+				'Oct',
+				'Nov',
+				'Dec'
+			]
 
 			var d1 = new Date(this.data.album.range[0])
 			var d2 = new Date(this.data.album.range[1])
-			if (d1.getMonth() == d2.getMonth()){
-				if (d1.getDate() == d2.getDate()){
-					return d1.getDate() + " " + monthNames[d1.getMonth()] + " " + d1.getFullYear()
+			if (d1.getMonth() == d2.getMonth()) {
+				if (d1.getDate() == d2.getDate()) {
+					return (
+						d1.getDate() +
+						' ' +
+						monthNames[d1.getMonth()] +
+						' ' +
+						d1.getFullYear()
+					)
 				}
-				return d1.getDate() + " - " + d2.getDate() + " " + monthNames[d1.getMonth()] + " " + d1.getFullYear()
-			}
-			else {
-				return d1.getDate() + " " + monthNames[d1.getMonth()] + " - " + d2.getDate() + " " + monthNames[d2.getMonth()] + " " + d1.getFullYear()
+				return (
+					d1.getDate() +
+					' - ' +
+					d2.getDate() +
+					' ' +
+					monthNames[d1.getMonth()] +
+					' ' +
+					d1.getFullYear()
+				)
+			} else {
+				return (
+					d1.getDate() +
+					' ' +
+					monthNames[d1.getMonth()] +
+					' - ' +
+					d2.getDate() +
+					' ' +
+					monthNames[d2.getMonth()] +
+					' ' +
+					d1.getFullYear()
+				)
 			}
 		}
 	}

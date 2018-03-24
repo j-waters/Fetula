@@ -70,9 +70,4 @@ export default {
     background: #d4d3d3;
 }
 
-.thumb-pad {
-	display: inline-block;
-	margin-right: 5px;
-}
-
 </style>

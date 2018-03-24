@@ -17,11 +17,12 @@
 		  :hint="albumRange"
 		  persistent-hint
 		  :value="name"
+		  @input="change_name"
         ></v-text-field>
 	</v-layout>
 	<v-layout row wrap>
-    <album-thumbnail v-for="album in albums" :albumid="album" :key="'a' + album" :size="256"/>
-            <thumbnail v-for="photo in photos" :key="photo" :photoid="photo" :album="$route.query.album" :size="256"/>
+    <album-thumbnail v-for="album in albums" :albumid="album" :key="'a' + album" :size="256" :flex="true"/>
+            <thumbnail v-for="photo in photos" :key="photo" :photoid="photo" :album="$route.query.album" :size="256" :flex="true"/>
 	</v-layout>
 </v-container>
 </div>
@@ -123,6 +124,13 @@ export default {
 				.catch(e => {
 					console.log(e.message)
 				})
+		},
+		change_name(new_name) {
+			axios.post(
+				'http://127.0.0.1:5000/api/update_album/' +
+					this.$route.query.album,
+				{ name: new_name }
+			)
 		}
 	},
 
@@ -134,6 +142,19 @@ export default {
 
 
 <style>
+.aspect-4x3 {
+	flex-grow: 1.5 !important;
+}
+
+.aspect-3x4 {
+	flex-grow: 0.85 !important;
+}
+
+.theme--light .toolbar {
+	background-color: #fafafa;
+}
+
+
 #title {
 	font-size: 56px;
 	height: auto;
@@ -161,39 +182,5 @@ export default {
 
 .theme--light .input-group.input-group--solo-inverted.input-group--focused {
 	background: #d4d3d3;
-}
-
-.container .thumb-pad {
-	flex: auto;
-	padding: 2px;
-}
-
-.container .thumb-pad .photo {
-	margin-bottom: 0;
-	width: 100%;
-	height: auto !important;
-}
-
-.container .thumb-pad .photo .progressive-image {
-	width: 100%;
-	height: auto;
-}
-
-.container .thumb-pad .photo .progressive-image-main {
-	height: auto;
-	width: 100%;
-	display: block;
-}
-
-.aspect-4x3 {
-	flex-grow: 1.5 !important;
-}
-
-.aspect-3x4 {
-	flex-grow: 0.85 !important;
-}
-
-.theme--light .toolbar {
-	background-color: #fafafa;
 }
 </style>
