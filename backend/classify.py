@@ -4,13 +4,9 @@ t = timer()
 import numpy as np
 import os
 import six.moves.urllib as urllib
-import sys
 import tarfile
 import tensorflow as tf
-import zipfile
 
-from collections import defaultdict
-from io import StringIO
 from PIL import Image
 
 # This is needed since the notebook is stored in the object_detection folder.
@@ -31,8 +27,6 @@ from object_detection.utils import ops as utils_ops
 
 
 from object_detection.utils import label_map_util
-
-from object_detection.utils import visualization_utils as vis_util
 
 # # Model preparation
 
@@ -150,15 +144,21 @@ def run_inference_for_single_image(image, graph):
 	return output_dict
 
 
-# In[18]:
+def resize(img):
+	baseheight = 800
+	hpercent = (baseheight / float(img.size[1]))
+	wsize = int((float(img.size[0]) * float(hpercent)))
+	img = img.resize((wsize, baseheight))
+	return img
 
 def classify_image(image_path):
 	image = Image.open(image_path)
+	image = resize(image)
 	# the array based representation of the image will be used later in order to prepare the
 	# result image with boxes and labels on it.
 	image_np = load_image_into_numpy_array(image)
 	# Expand dimensions since the model expects images to have shape: [1, None, None, 3]
-	image_np_expanded = np.expand_dims(image_np, axis=0)
+	# image_np_expanded = np.expand_dims(image_np, axis=0)
 	# Actual detection.
 	output_dict = run_inference_for_single_image(image_np, detection_graph)
 	"""
@@ -168,8 +168,13 @@ def classify_image(image_path):
 	"""
 	for i in range(len(output_dict['detection_classes'])):
 		if output_dict['detection_scores'][i] > 0.1:
+			print("Detected object:", str(category_index[output_dict['detection_classes'][i]]['name']),
+			      float(output_dict['detection_scores'][i]) * 100)
 			obj = (category_index[output_dict['detection_classes'][i]]['name'], output_dict['detection_scores'][i], output_dict['detection_boxes'][i])
 			yield obj
+		else:
+			print("Discarded object:", str(category_index[output_dict['detection_classes'][i]]['name']),
+			      float(output_dict['detection_scores'][i]) * 100)
 	# Visualization of the results of a detection.
 	##plt.figure(figsize=IMAGE_SIZE)
 	##plt.imshow(image_np)

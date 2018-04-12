@@ -1,24 +1,12 @@
 <template>
         <div style="padding:10px">
                     <v-card>
-                        <v-card-title style="padding-bottom: 4px;"><h3>Tags</h3></v-card-title>
-                    <v-select
-                        style="box-shadow: none;"
-                        chips
-                        tags
-                        solo
-                        append-icon=""
-                        v-model="data.tags">
-                        <template slot="selection" slot-scope="data">
-                        <v-chip
-                            close
-                            small
-                            @input="remove(data.item)"
-                            :selected="data.selected">
-                            <strong>{{ data.item.name }}</strong>
-                        </v-chip>
-                        </template>
-                    </v-select>
+						<v-card-title style="padding-bottom: 4px;"><h3>Tags</h3>
+							<v-btn icon @click="genTags">
+								<v-icon small style="color: #555" :class="{'spin': fetchTags}">sync</v-icon>
+							</v-btn>
+						</v-card-title>
+						<tags :data="data"/>
                     </v-card>
                     <br v-if="data.people.length > 0"/>
                     <v-card v-if="data.people.length > 0">
@@ -106,16 +94,21 @@
 <script>
 import axios from 'axios'
 import Person from '@/components/Person.vue'
+import Tags from '@/components/Tags.vue'
+import { EventBus } from '@/event_bus.js'
 
 export default {
 	name: 'view-details',
 	props: ['data'],
 	components: {
-		Person
+		Person,
+		Tags
 	},
 	data() {
 		return {
-			fetching: false
+			fetching: false,
+			fetchTags: false,
+			fetchPerson: false
 		}
 	},
 	methods: {
@@ -124,6 +117,23 @@ export default {
 				name: 'album',
 				query: { album: this.data.album.id }
 			})
+		},
+		genTags() {
+			this.fetchTags = true
+			axios
+				.get(
+					'http://127.0.0.1:5000/api/gen_image/' +
+						this.$route.query.photo +
+						'/tags'
+				)
+				.then(response => {
+					this.data.tags = response.data
+					this.fetchTags = false
+					console.log('fetched', this.data.tags)
+				})
+				.catch(e => {
+					console.log(e.message)
+				})
 		}
 	},
 
@@ -242,5 +252,21 @@ h6 {
 	line-height: 1.25;
 	margin: 0 0 0.2em 0;
 	color: #555;
+}
+
+.spin {
+	animation: rot 2s infinite linear;
+}
+
+@keyframes rot {
+    0% {
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg)
+    }
+
+    to {
+        -webkit-transform: rotate(1turn);
+        transform: rotate(1turn)
+    }
 }
 </style>

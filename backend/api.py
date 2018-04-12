@@ -1,22 +1,36 @@
-from flask import Blueprint, jsonify, send_file, request
 from io import BytesIO
 from timeit import default_timer as timer
 
-from album import Album
-from photo import Photo
-from photo import Person, Face
-import structure
-from database import db
+from flask import Blueprint, jsonify, send_file, request, Response, stream_with_context
 
-from CONFIG import *
+import structure
+from album import Album
+from assistant import get_similar_groups, PredictedOrientation, create_animation
+from database import db
+from photo import Person, Face
+from photo import Photo
+from tag import Tag
 
 api = Blueprint('api', __name__)
 
 @api.route('/api/albums')
 def get_albums():
 	albums = [a.id for a in Album.query.filter_by(parent=None).all()]
-	print(albums)
 	return jsonify(albums)
+
+
+@api.route('/api/home')
+def home():
+	notifications = len(get_similar_groups())
+	notifications += len(PredictedOrientation.query.all())
+	return jsonify({'notifications': notifications})
+
+
+@api.route('/api/assistant')
+def assistant():
+	similar = get_similar_groups()
+	rotations = [r.data() for r in PredictedOrientation.query.all()]
+	return jsonify({'similar': similar, 'rotations': rotations})
 
 @api.route('/api/database/create')
 def create_database():
@@ -64,14 +78,21 @@ def person_names():
 	people = Person.query.all()
 	return jsonify({'names': [p.name for p in people]})
 
+
+@api.route('/api/tag_names')
+def tag_names():
+	tags = Tag.query.all()
+	return jsonify({'names': [t.name for t in tags]})
+
 tim = 0
 @api.route('/api/metadata/<image>/<mode>')
 #@profile(sort_args=['cumulative'], )
 def metadata(image, mode):
 	t = timer()
 	p = Photo.query.filter_by(id=image).first()
+	p.update_modified()
 	if mode == 's':
-		out = {'date': p.date.isoformat()}
+		out = {'date': p.date.isoformat(), 'ratio': p.ratio, 'version': p.version}
 	if mode == 'n':
 		out = p.exif_data()
 		out['star'] = p.star
@@ -87,6 +108,20 @@ def update_image(image):
 	p.update(data)
 	return ""
 
+
+@api.route('/api/gen_image/<image>/tags')
+def gen_image_tags(image):
+	p = Photo.query.filter_by(id=image).first()  # type: Photo
+	p.gen_tags(force=True)
+	return jsonify([o.data() for o in p.objects])
+
+
+@api.route('/api/gen_image/<image>/people')
+def gen_image_faces(image):
+	p = Photo.query.filter_by(id=image).first()  # type: Photo
+	p.gen_faces(force=True)
+	return jsonify([f.data() for f in p.faces])
+
 @api.route('/api/update_album/<album>', methods=['POST'])
 def update_album(album):
 	a = Album.query.filter_by(id=album).first()
@@ -100,3 +135,25 @@ def update_person(person):
 	data = request.json
 	a.update(data)
 	return ""
+
+
+@api.route('/api/process')
+def process():
+	options = dict(request.args)
+	options = {k: v[0] == 'true' for k, v in options.items()}
+	r = Response(stream_with_context(structure.compute(options)), mimetype='text/event-stream')
+	return r
+
+
+@api.route('/api/create_animation', methods=['POST'])
+def make_animation():
+	data = request.json
+	photos = [Photo.query.filter_by(id=p).first().path for p in data['photos']]
+	create_animation(photos, 16)
+	return ''
+
+
+@api.before_app_first_request
+def initialise():
+	structure.update()
+	return "Done"

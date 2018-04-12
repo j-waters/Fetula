@@ -1,21 +1,27 @@
 <template >
-	<div :class="[flex ? 'thumb-flex' : 'thumb-block', 'aspect-' + ratio]">
+	<div :class="[flex ? 'thumb-flex' : 'thumb-block', 'aspect-' + ratio]" v-if="!hide">
 		<v-card hover class="photo" :style="{'min-height': size + 'px'}" v-on:mouseover="hover = true" v-on:mouseleave="hover = false" v-on:click.native.stop="activate">
 		<!--progressive-img
 			:src="source + modifier"
 			@onLoad="get_ratio"
 			/-->
-			<lazy-image :placeholder="source + '/xs'" :src="source + modifier"/>
+			<lazy-image :placeholder="source + '/xs' + p_version" :src="source + modifier + p_version"
+						:ratio="base_ratio" :rotation="rotate"/>
+			<div class="controls">
+				<v-btn icon v-if="controls.indexOf('rotate') != -1 && hover" v-on:click.native.stop="rotate_right">
+					<v-icon color="white" small>rotate_right</v-icon>
+				</v-btn>
+				<v-btn icon v-if="controls.indexOf('delete') != -1 && hover" v-on:click.native.stop="del">
+					<v-icon color="white" small>delete</v-icon>
+				</v-btn>
+			</div>
 			<transition name="hover">
-				
-		<div class="caption" v-show="hover">
-								<div><p>{{fdate}}</p>
-								</div>
-															<div><p>{{ftime}}</p>
-								</div>
-							</div>
-		</transition>
-	</v-card> 
+				<div class="caption" v-show="hover">
+					<div><p>{{fdate}}</p></div>
+					<div><p>{{ftime}}</p></div>
+				</div>
+			</transition>
+		</v-card>
 	</div>
 </template>
 
@@ -24,22 +30,40 @@
 import axios from 'axios'
 import imagesLoaded from 'vue-images-loaded'
 import LazyImage from '@/components/LazyImage.vue'
+import { EventBus } from '@/event_bus.js'
 
 export default {
 	name: 'Thumbnail',
-	props: ['album', 'photoid', 'size', 'flex'],
+	//props: ['photoid', 'size', 'flex', 'controls'],
+	props: {
+		photoid: Number,
+		size: Number,
+		flex: Boolean,
+		controls: {
+			type: Array,
+			default: function() {
+				return []
+			}
+		},
+		rotate: {
+			type: Number,
+			default: 0
+		}
+	},
 	components: { LazyImage },
 	data() {
 		return {
 			hover: false,
 			date: new Date(),
 			fetched: false,
-			ratio: '4x3'
+			base_ratio: '4x3',
+			hide: false,
+			version: 0
 		}
 	},
 	directives: {
-        imagesLoaded
-    },
+		imagesLoaded
+	},
 	methods: {
 		activate() {
 			this.$router.push({
@@ -53,23 +77,6 @@ export default {
 		mouseOver() {
 			this.hover = !this.hover
 		},
-		get_ratio() {
-			var c = this.$children[0].$children[0].$el.children
-			let img = c[c.length - 1].children[0]
-			img.onload = function(i){
-				img = i.target
-				var w = img.naturalWidth
-				var h = img.naturalHeight
-				var r = w / h
-				if (Math.round(r * 3, 2) == 4) {
-					this.ratio = '4x3'
-				}
-				if (Math.round(r * 4, 2) == 3) {
-					this.ratio = '3x4'
-				}
-			}.bind(this)
-			
-		},
 		fetchMeta() {
 			if (this.fetching != true) {
 				this.fetching = true
@@ -82,25 +89,62 @@ export default {
 					.then(response => {
 						this.fetching = false
 						this.date = new Date(response.data.date)
-						//this.ratio = response.data.ratio
+						this.base_ratio = response.data.ratio
+						this.version = response.data.version
 					})
 					.catch(e => {
 						console.log(e.message)
 					})
 			}
+		},
+
+		del() {
+			axios.post(
+				'http://127.0.0.1:5000/api/update_image/' + this.photoid,
+				{ delete: true }
+			)
+			this.hide = true
+		},
+		rotate_right() {
+			axios.post(
+				'http://127.0.0.1:5000/api/update_image/' +
+					this.photoid,
+				{ rotate: 'right' }
+			)
+			this.rotate += 1
+			//this.version += 1
 		}
 	},
 
 	computed: {
 		source() {
-			return (
-				'http://127.0.0.1:5000/api/image/' +
-				this.photoid
-			)
+			return 'http://127.0.0.1:5000/api/image/' + this.photoid
+		},
+
+		ratio(){
+			if (this.base_ratio == '4x3'){
+				if (this.rotate % 2 != 0){
+					return '3x4'
+				}
+				return '4x3'
+			}
+			if (this.base_ratio == '3x4'){
+				if (this.rotate % 2 != 0){
+					return '4x3'
+				}
+				return '3x4'
+			}
+			return this.base_ratio
+		},
+
+		p_version() {
+			return '?v=' + this.version
 		},
 
 		modifier() {
-			if (parseInt(this.size) > 150) {
+			if (parseInt(this.size) > 400) {
+				return '/ml'
+			} else if (parseInt(this.size) > 150) {
 				return '/m'
 			} else {
 				return '/s'
@@ -148,6 +192,10 @@ export default {
 </script>
 
 <style scoped lang="css">
+
+.card {
+	transition: min-height 1s;
+}
 
 .thumb-flex {
 	flex: auto;
@@ -213,5 +261,15 @@ export default {
 
 p {
     margin-bottom: 0;
+}
+
+.controls {
+	top: 0;
+    position: absolute;
+    right: 0;
+}
+
+.btn {
+    margin: 6px 0 6px 0;
 }
 </style>

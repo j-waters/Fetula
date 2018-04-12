@@ -14,8 +14,32 @@
 
 <style lang="css">
 
-::-webkit-scrollbar { 
-    display: none; 
+html {
+  /*overflow-y: hidden;*/
+  width: 100vw;
+}
+
+/* Let's get this party started */
+::-webkit-scrollbar {
+    width: 7px;
+    top: 64px;
+}
+ 
+/* Track */
+::-webkit-scrollbar-track {
+    -webkit-border-radius: 5px;
+    border-radius: 5px;
+    /*display: none;*/
+}
+ 
+/* Handle */
+::-webkit-scrollbar-thumb {
+    -webkit-border-radius: 5px;
+    border-radius: 5px;
+    background: grey; 
+}
+::-webkit-scrollbar-thumb:window-inactive {
+	background: grey; 
 }
 
 .container {

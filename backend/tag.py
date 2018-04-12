@@ -7,6 +7,9 @@ class Tag(db.Model):
 	def __init__(self, name):
 		self.name = name
 
+	def __repr__(self):
+		return "<Tag {}>".format(self.name)
+
 class Object(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
 	x = db.Column(db.Float, nullable=False)
@@ -34,7 +37,8 @@ class Object(db.Model):
 		self.x = location[1] * 100
 		self.y = location[0] * 100
 		self.width = (location[3] - location[1]) * 100
-		self.height = (location[0] - location[2]) * 100
+		self.height = (location[2] - location[0]) * 100
 
 	def data(self):
-		return {'name': self.tag.name, 'position': (self.x, self.y, self.width, self.height)}
+		return {'name': self.tag.name, 'position': (self.x, self.y, self.width, self.height),
+		        'confidence': round(self.score * 100)}

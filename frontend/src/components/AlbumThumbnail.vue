@@ -5,16 +5,21 @@
 				:src="source + modifier"
 				@onLoad="get_ratio"
 				/-->
-				<lazy-image :placeholder="source + '/xs'" :src="source + modifier" :flex="flex"/>
+			<lazy-image :placeholder="source + '/xs'" :src="source + modifier" :flex="flex" :ratio="ratio"/>
 				<transition name="hover">
 					
 			<div class="caption" v-show="true">
-									<div><p>{{name}}</p>
-									</div>
-									</div>
+				<div>
+					<p>{{name}}</p>
+					<div class="extra" v-if="size >= 200">
+						<p>{{aSize}} items</p>
+						<p style="float: right;">{{albumRange}}</p>
+					</div>
+				</div>
+			</div>
 								
 			</transition>
-			<v-icon style="position: absolute; z-index: 999; color: white; right: 0; top:0;">photo_album</v-icon>
+			<v-icon style="position: absolute; z-index: 1; color: white; right: 0; top:0;">photo_album</v-icon>
 		</v-card> 
   </div>
 </template>
@@ -36,7 +41,9 @@ export default {
 			name: '',
 			albums: [],
 			ratio: '4x3',
-			cover: null
+			range: [0, 0],
+			cover: null,
+			aSize: 0
 		}
 	},
 	methods: {
@@ -72,6 +79,9 @@ export default {
 						this.fetching = false
 						this.name = response.data.name
 						this.cover = response.data.cover
+						this.ratio = response.data.ratio
+						this.aSize = response.data.size
+						this.range = response.data.range
 					})
 					.catch(e => {
 						console.log(e.message)
@@ -94,6 +104,26 @@ export default {
 			}
 			else {
 				return '/s'
+			}
+		},
+		albumRange() {
+			var monthNames = [
+				"Jan", "Feb", "Mar",
+				"Apr", "May", "Jun", "Jul",
+				"Aug", "Sep", "Oct",
+				"Nov", "Dec"
+			];
+
+			var d1 = new Date(this.range[0])
+			var d2 = new Date(this.range[1])
+			if (d1.getMonth() == d2.getMonth()){
+				if (d1.getDate() == d2.getDate()){
+					return d1.getDate() + " " + monthNames[d1.getMonth()] + " " + d1.getFullYear()
+				}
+				return d1.getDate() + " - " + d2.getDate() + " " + monthNames[d1.getMonth()] + " " + d1.getFullYear()
+			}
+			else {
+				return d1.getDate() + " " + monthNames[d1.getMonth()] + " - " + d2.getDate() + " " + monthNames[d2.getMonth()] + " " + d1.getFullYear()
 			}
 		}
 	},
@@ -181,5 +211,14 @@ img {
 
 p {
     margin-bottom: 0;
+}
+
+.extra {
+	font-size: 12px;
+    opacity: 0.6;
+}
+
+.extra p {
+	display: inline-block;
 }
 </style>

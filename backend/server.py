@@ -1,13 +1,9 @@
 import flask
 from flask_cors import CORS
-import structure
-from database import db
 
 from CONFIG import *
+from database import db
 
-app = flask.Flask(__name__)
-
-CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 def create_app():
 	app = flask.Flask(__name__)#static_folder="../dist/assets", template_folder="../dist"
@@ -25,7 +21,7 @@ def create_app():
 	return app
 
 
+app = create_app()
 if __name__ == "__main__":
 	app = create_app()
-	structure.update(app)
 	app.run(debug=True, threaded=True)

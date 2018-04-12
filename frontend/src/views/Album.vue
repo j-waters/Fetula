@@ -9,7 +9,7 @@
 			<v-icon>more_vert</v-icon>
 		</v-btn>
 	</v-toolbar>
-<v-container>
+	<v-container v-scroll="onScroll">
 	<v-layout row>
 		<v-text-field
           name="input-1"
@@ -22,9 +22,25 @@
 	</v-layout>
 	<v-layout row wrap>
     <album-thumbnail v-for="album in albums" :albumid="album" :key="'a' + album" :size="256" :flex="true"/>
-            <thumbnail v-for="photo in photos" :key="photo" :photoid="photo" :album="$route.query.album" :size="256" :flex="true"/>
+		<thumbnail v-for="photo in photos" :key="photo" :photoid="photo" :size="256" :flex="true"
+				   :controls="['delete', 'rotate']"/>
 	</v-layout>
 </v-container>
+	<transition name="drop">
+		<v-btn
+				color="pink"
+				dark
+				medium
+				fixed
+				bottom
+				right
+				fab
+				@click="$vuetify.goTo(0)"
+				v-if="toTop"
+		>
+			<v-icon>keyboard_arrow_up</v-icon>
+		</v-btn>
+	</transition>
 </div>
 </template>
 
@@ -45,7 +61,8 @@ export default {
 			albums: [],
 			photos: [],
 			name: '',
-			range: [0, 0]
+			range: [0, 0],
+			toTop: false
 		}
 	},
 	watch: {
@@ -131,6 +148,15 @@ export default {
 					this.$route.query.album,
 				{ name: new_name }
 			)
+		},
+		onScroll() {
+			var offset = window.pageYOffset || document.documentElement.scrollTop
+			if (offset > 400){
+				this.toTop = true
+			}
+			else {
+				this.toTop = false
+			}
 		}
 	},
 
@@ -182,5 +208,16 @@ export default {
 
 .theme--light .input-group.input-group--solo-inverted.input-group--focused {
 	background: #d4d3d3;
+}
+
+.drop-enter-active,
+.drop-leave-active {
+	transition-property: transform;
+	transition-duration: 0.5s;
+}
+
+.drop-enter,
+.drop-leave-active {
+	transform: translateY(80px)
 }
 </style>

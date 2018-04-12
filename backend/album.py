@@ -1,17 +1,11 @@
-import inspect
 import os
-from datetime import datetime
-from functools import reduce
-from json import load, dump
-from timeit import default_timer as timer
-from profiler import profile
-from database import db
-from sqlalchemy import orm, func
-from photo import Photo
 
-import sys
+from sqlalchemy import orm, func
 
 from CONFIG import *
+from database import db
+from photo import Photo
+
 
 class Album(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
@@ -43,6 +37,13 @@ class Album(db.Model):
 		self.size = db.session.query(func.count(Photo.id)).filter(Photo.album_id == self.id).scalar()
 
 	def scan(self):
+		if not os.path.exists(self.path):
+			print("does not exist", self.path)
+			for photo in Photo.query.filter_by(album=self).all():
+				photo.update_modified()
+			db.session.delete(self)
+			db.session.commit()
+			return
 		files = []
 		folders = []
 		for dirpath, dirnames, filenames in os.walk(self.path):
@@ -60,9 +61,10 @@ class Album(db.Model):
 			if Album.query.filter_by(parent=self, name=folder).first() is None:
 				a = Album(folder, self)
 				db.session.add(a)
+
+		for photo in Photo.query.filter_by(album=self).all():
+			photo.update_modified()
 		db.session.commit()
-
-
 
 	def __repr__(self):
 		return '<Album %r>' % self.name
@@ -74,17 +76,16 @@ class Album(db.Model):
 		if mode == 'm':
 			return {'name': self.name, 'highlights': list(self.highlights()), 'albums': [a.id for a in self.albums], 'size': self.size, 'range': self.range()}
 		if mode == 's':
-			return {'name': self.name, 'size': self.size, 'range': self.range(), 'cover': self.photos[0].id}
+			return {'name': self.name, 'size': self.size, 'range': self.range(), 'cover': self.photos[0].id,
+			        'ratio': self.photos[0].ratio}
 
 	def highlights(self):
 		photos = self.photos
-		print(self.size)
 		for photo in photos:
 			if photo.star or (int(photo.id) % int(self.size / 8 + 1)) == 0:
 				yield photo.id
 
 	def range(self):
-		from photo import Photo
 		p1 = self.photos[0]
 		p2 = self.photos[-1]
 		return [p1.date, p2.date]

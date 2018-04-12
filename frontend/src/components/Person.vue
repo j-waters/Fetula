@@ -13,7 +13,7 @@
 			<img v-if="person.name != '%add'" :src="source" alt="avatar" @contextmenu="show">
 			<v-icon v-else color="grey lighten-1" x-large @click.stop="edit = true">add</v-icon>
 			</v-avatar>
-			<span>{{person.name != '%add' ? person.name : 'Add Person'}}</span>
+			<span>{{person.name != '%add' ? person.name : 'Add Person'}} ({{person.confidence}}%)</span>
 		</v-tooltip>
 		<v-dialog v-model="edit" max-width="500px">
 			<v-card>
@@ -66,10 +66,10 @@ export default {
 			})
 		},
 		mouseOver() {
-			EventBus.$emit('face-hover', this.person.name)
+			EventBus.$emit('detected-hover', this.person.name)
 		},
 		mouseOut() {
-			EventBus.$emit('face-out', this.person.name)
+			EventBus.$emit('detected-out', this.person.name)
 		},
 		getNames() {
 			axios
@@ -96,7 +96,7 @@ export default {
 					this.data.id,
 					{ addPerson: {name: this.name} }
 				)
-				this.data.people.push({'name': this.name, 'position': [0, 0, 0, 0]})
+				this.data.people.push({'name': this.name, 'position': [0, 0, 0, 0], 'confidence': 100})
 				this.name = "%add"
 			}
 			else {

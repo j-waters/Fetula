@@ -1,9 +1,11 @@
-from database import db
-import face_recognition
-from json import dumps, loads
-from sqlalchemy import orm
-from numpy import array
 import os
+from json import dumps, loads
+
+import face_recognition
+from numpy import array
+from sqlalchemy import orm
+
+from database import db
 
 
 class Person(db.Model):
@@ -84,7 +86,8 @@ class Face(db.Model):
 		person.faces.append(self)
 
 	def data(self):
-		return {'name': self.person.name, 'position': (self.x, self.y, self.width, self.height)}
+		return {'name': self.person.name, 'position': (self.x, self.y, self.width, self.height),
+		        'confidence': round((1 - self.distance) * 100)}
 
 	def __repr__(self):
 		return "<Face at {} of {}>".format((self.x, self.y, self.width, self.height), self.person)

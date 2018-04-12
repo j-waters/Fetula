@@ -5,27 +5,38 @@
             
                 <div class="imgwrap">
                     <!--img :src="source + '/s'"-->
-                    <clazy-load :src="source + '/l'">
-                        <img :src="source + '/l'" slot="image">
-                        <div class="caption" slot="image">
+					<img ref="main" slot="image" v-on:load="loadedHQ=true" :style="rotation">
+					<div v-show="fetchedMeta" class="caption" slot="image">
                             <h2>{{data.album.name}}</h2> 
                             <div><p>{{fdate}}</p>
                             </div>
                         </div>
-                    </clazy-load>
 					<transition-group name="face">
-						<face v-if="!isFull" v-for="face in data.people" :key="face.name" :face="face"/>
+						<detected v-if="!isFull" v-for="face in data.people" :key="face.name" :detected="face"
+								  :colour="'greenyellow'"/>
+						<detected v-if="!isFull" v-for="tag in data.tags" :key="tag.position[0] + tag.name"
+								  :detected="tag" :colour="'blue'"/>
 					</transition-group>
                     
                 </div>
-				<img v-if="data.album.size > parseInt(this.$route.query.photo) + 1" src="@/assets/arrow.svg" class="nav-next" v-on:click="selectNext()">
-            	<img v-if="parseInt(this.$route.query.photo) - 1 >= 0" src="@/assets/arrow.svg" class="nav-previous" v-on:click="selectPrev()">
+			  <img v-if="data.album.next != null" src="@/assets/arrow.svg" class="nav-next" v-on:click="selectNext()">
+			  <img v-if="data.album.prev != null" src="@/assets/arrow.svg" class="nav-previous"
+				   v-on:click="selectPrev()">
             
             <div class="menus">
 				<v-btn icon @click="star">
 					<v-icon>{{(data.star) ? 'star' : 'star_outline'}}</v-icon>
 				</v-btn>
-				<v-btn icon @click="isFull = !isFull">
+				<v-btn icon @click="openLocal">
+					<v-icon>open_in_browser</v-icon>
+				</v-btn>
+				<v-btn icon @click="editBar = !editBar">
+					<v-icon>edit</v-icon>
+				</v-btn>
+				<v-btn icon @click="quality" v-if="!(loadedHQ && loadHQ)">
+					<v-icon :class="{'pulse': loadHQ}">high_quality</v-icon>
+				</v-btn>
+				<v-btn icon @click="detailsBar = !detailsBar">
 					<v-icon>info</v-icon>
 				</v-btn>
             </div>
@@ -38,8 +49,8 @@
       </v-flex>
         <transition name="expand">
             <v-flex class="flex xs3 menu" v-if="!isFull">
-                <view-details :data='data' :show="!isFull"></view-details>
-				
+				<view-details :data='data' v-show="detailsBar"></view-details>
+				<edit-sidebar :data='data' v-show="editBar"></edit-sidebar>
             </v-flex>
         </transition>
     </v-layout>
@@ -48,20 +59,29 @@
 <script>
 import axios from 'axios'
 import ViewDetails from '@/components/ViewDetails.vue'
-import Face from '@/components/Face.vue'
+import EditSidebar from '@/components/EditSidebar.vue'
+import Detected from '@/components/Detected.vue'
+import { EventBus } from '@/event_bus.js'
+
 //router.replace won't add new history
 export default {
 	name: 'viewer',
 	//props: ['album', 'photo'],
-	components: { ViewDetails, Face },
+	components: { ViewDetails, Detected, EditSidebar },
 	data() {
 		return {
-			isFull: true,
+			detailsBar: false,
+			editBar: false,
+			imgSize: '/l',
+			loadHQ: false,
+			loadedHQ: false,
+			fetchedMeta: false,
 			data: {
 				tags: ['dog', 'cat', 'person', 'city'],
 				album: { name: '', range:[0, 0] },
 				people: []
-			}
+			},
+			rotate: 0,
 		}
 	},
 	watch: {
@@ -74,6 +94,17 @@ export default {
 				'http://127.0.0.1:5000/api/image/' +
 				this.$route.query.photo
 			)
+		},
+		p_version() {
+			return '?v=' + this.data.version
+		},
+
+		rotation(){
+			return {'transform': 'rotate(' + 90 * this.rotate + 'deg)'}
+		},
+
+		isFull() {
+			return !(this.detailsBar || this.editBar)
 		},
 
 		fdate() {
@@ -102,42 +133,60 @@ export default {
 	},
 
 	methods: {
+		openLocal() {
+			window.location = "ms-photos:viewer?fileName=" + this.data.path
+		},
+		quality() {
+			this.imgSize = '/o'
+			this.loadedHQ = false
+			this.loadHQ = true
+			this.$refs.main.src = this.source + this.imgSize + this.p_version
+		},
 		selectNext() {
+			this.selectImage()
 			this.$router.replace({
 				name: 'view',
 				query: {
 					album: this.$route.query.album,
-					photo: parseInt(this.$route.query.photo) + 1
+					photo: this.data.album.next
 				}
 			})
 		},
 		selectPrev() {
+			this.selectImage()
 			this.$router.replace({
 				name: 'view',
 				query: {
 					album: this.$route.query.album,
-					photo: parseInt(this.$route.query.photo) - 1
+					photo: this.data.album.prev
 				}
 			})
+		},
+		selectImage() {
+			this.imgSize = '/l'
+			this.loadHQ = false
+			this.loadedHQ = false
 		},
 		preload() {
 			const pre = new Image()
 			pre.src =
 				'http://127.0.0.1:5000/api/image/' +
 				this.$route.query.photo +
-				'/l'
-
-			const pre1 = new Image()
-			pre1.src =
-				'http://127.0.0.1:5000/api/image/' +
-				(parseInt(this.$route.query.photo) + 1) +
-				'/l'
-
-			const pre2 = new Image()
-			pre2.src =
-				'http://127.0.0.1:5000/api/image/' +
-				(parseInt(this.$route.query.photo) - 1) +
-				'/l'
+				'/l' + this.p_version
+			if (this.data.album.next){
+				const pre1 = new Image()
+				pre1.src =
+					'http://127.0.0.1:5000/api/image/' +
+					this.data.album.next +
+					'/l'
+			}
+			if (this.data.album.prev){
+				const pre2 = new Image()
+				pre2.src =
+					'http://127.0.0.1:5000/api/image/' +
+					this.data.album.prev +
+					'/l'
+			}
 		},
 
 		fetchData() {
@@ -149,6 +198,8 @@ export default {
 				)
 				.then(response => {
 					this.data = response.data
+					this.$refs.main.src = this.source + this.imgSize + this.p_version
+					this.fetchedMeta = true
 				})
 				.catch(e => {
 					console.log(e.message)
@@ -172,6 +223,12 @@ export default {
 
 	created() {
 		this.fetchData()
+		EventBus.$on('image-edit', function(type){
+			if (type == 'rotate-right'){
+				this.rotate += 1
+				console.log(this.rotate)
+			}
+		}.bind(this))
 	}
 }
 </script>
@@ -347,5 +404,22 @@ img {
 	font-size: 100%;
 	font: inherit;
 	vertical-align: baseline;
+}
+
+.pulse {
+	animation: pulse 1s infinite linear;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1)
+    }
+
+    50% {
+        transform: scale(0.8)
+    }
+	0% {
+        transform: scale(1)
+    }
 }
 </style>
