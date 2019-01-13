@@ -1,5 +1,4 @@
 import os
-
 import piexif
 from PIL import Image, ImageFile
 
@@ -346,6 +345,7 @@ class Photo(db.Model):
 		self.get_blur()
 		self.gen_faces()
 		self.gen_similar()
+		# self.gen_tags()
 		exif = self.get_exif()
 		out = {}
 		out['id'] = self.id
