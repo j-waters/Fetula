@@ -1,5 +1,5 @@
 # Fetula
-Fetula is a locally hosted clone of Google Photos, without sacraficing features
+Fetula is a locally hosted clone of Google Photos, without sacrificing features
 
 ## Features
 + Clean Material Design web interface
